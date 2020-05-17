@@ -5,7 +5,9 @@ exports.createSauce = (req, res, next) => {
   const sauceObject = JSON.parse(req.body.sauce);
   delete sauceObject._id;
     sauceObject.like = 0;  //a l'objet sausse on ajoute like à 0
-    sauceObject.dislike = 0; //a l'objet sausse on ajoute dislike
+    sauceObject.dislike = 0; //a l'objet sauce on ajoute dislike
+    sauceObject.usersLiked = Array(); // déclaration tableau des utilisateur qui aiment
+    sauceObject.usersDisliked = Array(); // déclaration tableau des utilisateur qui aiment pas
   const sauce = new Sauce({
     ...sauceObject,
     imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
@@ -27,13 +29,9 @@ exports.createSauce = (req, res, next) => {
 };
 
 exports.getOneSauce = (req, res, next) => {
-  Sauce.findOne({
-    _id: req.params.id
-  }).then(
-    (sauce) => {
-      res.status(200).json(sauce);
-    }
-  ).catch(
+  Sauce.findOne({_id: req.params.id})
+      .then((sauce) => {res.status(200).json(sauce);})
+      .catch(
     (error) => {
       res.status(404).json({
         error: error
@@ -43,9 +41,15 @@ exports.getOneSauce = (req, res, next) => {
 };
 
 exports.likeSauce = (req, res, next) => {
-  Sauce.updateOne({ _id: req.params.id }, { $inc: { like: req.param.like + 1} })
-    .then(() => res.status(200).json({ message: 'Like modifié !'}))
-    .catch(error => res.status(400).json({ error }));
+  Sauce.findOne({_id: req.params.id})
+      .then((sauce) => {res.status(200).json(sauce);})
+      .catch(
+    (error) => {
+      res.status(404).json({
+        error: error
+      });
+    }
+  );
 };
 
 exports.deleteSauce = (req, res, next) => {
