@@ -4,8 +4,8 @@ const fs = require('fs');
 exports.createSauce = (req, res, next) => {
   const sauceObject = JSON.parse(req.body.sauce);
   delete sauceObject._id;
-    sauceObject.like = 0;  //a l'objet sausse on ajoute like à 0
-    sauceObject.dislike = 0; //a l'objet sauce on ajoute dislike
+    sauceObject.likes = 0;  //a l'objet sausse on ajoute like à 0
+    sauceObject.dislikes = 0; //a l'objet sauce on ajoute dislike
     sauceObject.usersLiked = Array(); // déclaration tableau des utilisateur qui aiment
     sauceObject.usersDisliked = Array(); // déclaration tableau des utilisateur qui aiment pas
   const sauce = new Sauce({
@@ -39,19 +39,40 @@ exports.getOneSauce = (req, res, next) => {
   );
 };
 
+exports.modifySauce = (req, res, next) => {
+  const sauceObject = req.file ?
+    {
+      ...JSON.parse(req.body.sauce),
+      imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+    } : { ...req.body };
+  Sauce.updateOne({ _id: req.params.id }, { ...sauceObject, _id: req.params.id })
+    .then(() => res.status(200).json({ message: 'Sauce modifiée !'}))
+    .catch(error => res.status(400).json({ error }));
+};
+
+
+
 exports.likeOrDislike = (req, res, next) => {
-    if(req.body.like === 1){// utilisateur aime la sauce
-        Sauce.updateOne({ _id: req.params.id }, {$push: {usersLiked: req.body.userId}}, {$set: {like: req.body.like++} })
-        .then (()=> res.status(200).json({ message: 'Like +1 modifié et user Add to Array Liked!'}))
+    if(req.body.likes === 1){// utilisateur aime la sauce
+        Sauce.updateOne({ _id: req.params.id },  {$inc: {likes: req.body.likes++} ,$push: {usersLiked: req.body.userId}})
+        .then ((sauce)=> res.status(200).json(sauce))
         .catch(error => res.status(400).json({ error }));
-    } else if (req.body.like === -1){
-        Sauce.updateOne({ _id: req.params.id }, {$push: {usersDisliked: req.body.userId}}, {$set: {like: req.body.like--} })
-        .then (()=> res.status(200).json({ message: 'Like -1 modifié et user Add to Array Disliked!'}))
+    } else if (req.body.likes === -1){
+        Sauce.updateOne({ _id: req.params.id },  {$inc: {dislikes: (req.body.likes++)*-1} ,$push: {usersDisliked: req.body.userId}})
+        .then ((sauce)=> res.status(200).json(sauce))
         .catch(error => res.status(400).json({ error }));
-    } else{//like vaut 0
-        Sauce.updateOne({ _id: req.params.id }, {$push: {usersDisliked: req.body.userId}}, {$inc: {like: req.body.like} })
-        .then (()=> res.status(200).json({ message: 'Like 0 modifié et user Add to Array Disliked!'}))
-        .catch(error => res.status(400).json({ error }));
+    } else{ //like vaut 0
+        if(Sauce.findOne({usersLiked: req.body.userId})){
+        Sauce.updateOne({_id: req.params.id}, {$pull: {usersLiked: req.body.userId}, $inc: {likes: -1}})
+             .then((sauce) => {res.status(200).json(sauce);}) 
+            .catch(error => res.status(400).json({ error }));
+        }else if(Sauce.findOne({usersDisliked: req.body.userId})){
+         Sauce.updateOne({_id: req.params.id}, {$pull: {usersDisliked: req.body.userId}, $inc: {dislikes: -1}})
+             .then((sauce) => {res.status(200).json(sauce);}) 
+            .catch(error => res.status(400).json({ error }));           
+        }else{
+            
+        }
     }
 };
 
