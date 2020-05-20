@@ -53,12 +53,12 @@ exports.modifySauce = (req, res, next) => {
 
 
 exports.likeOrDislike = (req, res, next) => {
-    if(req.body.likes === 1){// utilisateur aime la sauce
-        Sauce.updateOne({ _id: req.params.id },  {$inc: {likes: req.body.likes++} ,$push: {usersLiked: req.body.userId}})
+    if(req.body.like === 1){// utilisateur aime la sauce
+        Sauce.updateOne({ _id: req.params.id },  {$inc: {likes: req.body.like++} ,$push: {usersLiked: req.body.userId}})
         .then ((sauce)=> res.status(200).json(sauce))
         .catch(error => res.status(400).json({ error }));
-    } else if (req.body.likes === -1){
-        Sauce.updateOne({ _id: req.params.id },  {$inc: {dislikes: (req.body.likes++)*-1} ,$push: {usersDisliked: req.body.userId}})
+    } else if (req.body.like === -1){
+        Sauce.updateOne({ _id: req.params.id },  {$inc: {dislikes: (req.body.like++)*-1} ,$push: {usersDisliked: req.body.userId}})
         .then ((sauce)=> res.status(200).json(sauce))
         .catch(error => res.status(400).json({ error }));
     } else{ //like vaut 0
